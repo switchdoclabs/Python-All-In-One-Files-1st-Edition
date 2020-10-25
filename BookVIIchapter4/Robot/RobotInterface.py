@@ -1,19 +1,18 @@
 #!/usr/bin/python3
 # Robot Interface Wrapper Class
-# Version 1.1
+# Version 1.2 Second Edition PAOI
 # John C. Shovic, SwitchDoc Labs
 
 DEBUG = True
 
 import RPi.GPIO as GPIO
 import motor
-import ultra
 import socket
 import time
 import threading
-import turn
 import led
 import os
+import ultra
 
 import sys
 sys.path.append("./Adafruit_Python_PCA9685/Adafruit_PCA9685")
@@ -149,6 +148,7 @@ class RobotInterface(object):
         # head moves
 
         def headTurnLeft(self):
+            
             pwm.set_pwm(self.HEAD_TURN_SERVO, 0, calValues.look_left_max)
             time.sleep(0.05)
 
@@ -162,8 +162,8 @@ class RobotInterface(object):
             time.sleep(0.05)
 
         def headTurnPercent(self, percent):
+
             adder = (calValues.look_left_max - calValues.look_right_max)*(percent/100.0)
-            #print ("calValues.look_right_max + adder =", calValues.look_right_max + adder)
             pwm.set_pwm(self.HEAD_TURN_SERVO, 0, int(calValues.look_left_max - adder))
             time.sleep(0.05)
             
@@ -185,7 +185,6 @@ class RobotInterface(object):
 
         def headTiltPercent(self,percent):
             adder = (calValues.look_down_max - calValues.look_up_max)*(percent/100.0)
-            #print ("calValues.look_up_max + adder =", calValues.look_up_max + adder)
             pwm.set_pwm(self.HEAD_TILT_SERVO, 0, int(calValues.look_down_max - adder))
             time.sleep(0.05)
 
@@ -208,7 +207,6 @@ class RobotInterface(object):
 
         def wheelsPercent(self,percent):
             adder = (calValues.turn_left_max - calValues.turn_right_max)*(percent/100.0)
-            #print ("calValues.turn_right_max + adder =", calValues.turn_right_max + adder)
             pwm.set_pwm(self.WHEELS_TURN_SERVO, 0, int(calValues.turn_right_max + adder))
             time.sleep(0.05)
 

@@ -14,7 +14,7 @@ import time
 import threading
 import picamera
 from picamera.array import PiRGBArray
-import turn
+
 import cv2
 from collections import deque
 import numpy as np
@@ -31,7 +31,7 @@ import RobotInterface
 import time
 import random
 
-
+#opencv frame analysis thread
 def opencv_thread():         #OpenCV and FPV video
     global footage_socket, dis_data, distance_stay
     
@@ -50,7 +50,7 @@ def opencv_thread():         #OpenCV and FPV video
             mask = cv2.inRange(hsv, colorLower, colorUpper)
             mask = cv2.erode(mask, None, iterations=2)
             mask = cv2.dilate(mask, None, iterations=2)
-            cv2.imshow("mask2", mask)
+            cv2.imshow("OpenCV Mask", mask)
             
             cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
                 cv2.CHAIN_APPROX_SIMPLE)[-2]
@@ -70,9 +70,9 @@ def opencv_thread():         #OpenCV and FPV video
                 center = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
                 X = int(x)
                 Y = int(y)
-                print("X=",X)
-                print("Y=",Y)
-                print ("radius=", radius)
+                #print("X=",X)
+                #print("Y=",Y)
+                #print ("radius=", radius)
                 if radius > 10:
                     cv2.rectangle(image,(int(x-radius),int(y+radius)),(int(x+radius),int(y-radius)),(255,255,255),1)
                     
@@ -85,14 +85,10 @@ def opencv_thread():         #OpenCV and FPV video
                             pass
                         else:
                             hoz_mid_orig = look_left_max
-                        #ultra_turn(hoz_mid_orig)
-                        print("mu1 = ", mu1)
-                        print("hoz_mid_orig=", hoz_mid_orig)
+                        #print("mu1 = ", mu1)
+                        #print("hoz_mid_orig=", hoz_mid_orig)
                         RI.headTurnPercent(hoz_mid_orig)
                     elif X >330:
-                        mu1 = int((X-330)/3)
-                        # scale to percent
-                        mu1 = int((mu1/320.0)*50.0)
                         mu1 = int((X-330)/3)
                         # scale to percent
                         mu1 = int((mu1/320.0)*50.0)
@@ -102,23 +98,21 @@ def opencv_thread():         #OpenCV and FPV video
                             pass
                         else:
                             hoz_mid_orig = look_right_max
-                        #ultra_turn(hoz_mid_orig)
-                        print("mu1 = ", mu1)
-                        print("hoz_mid_orig=", hoz_mid_orig)
+                        #print("mu1 = ", mu1)
+                        #print("hoz_mid_orig=", hoz_mid_orig)
                         RI.headTurnPercent(hoz_mid_orig)
-                        print('x=%d'%X)
+                        #print('x=%d'%X)
                     else:
                         RI.wheelsMiddle() 
                         pass
-                    print("hoz_mid",hoz_mid)
-                    #mu_t = 100-(hoz_mid-hoz_mid_orig)
+                    #print("hoz_mid",hoz_mid)
                     mu_t = hoz_mid_orig # can use the head angle to turn 
 
-                    print("turn to mu_t=", mu_t)
+                    #print("turn to mu_t=", mu_t)
                     RI.wheelsPercent(mu_t)
                     
                     dis = dis_data
-                    print("dis=", dis)
+                    #print("dis=", dis)
                     if dis < (distance_stay-2) :
                         RI.allLEDSOff()
                         # red
@@ -126,11 +120,11 @@ def opencv_thread():         #OpenCV and FPV video
                         RI.set_Front_LED_On(RI.right_R)
                         
                         
-                        print("motor backward")
+                        #print("motor backward")
                         RI.motorBackward(motor_speed,motor_duration)
                         cv2.putText(image,'Too Close',(40,80), font, 0.5,(128,128,255),1,cv2.LINE_AA)
                     elif dis > (distance_stay+2):
-                        print("motor forward")
+                        #print("motor forward")
                         RI.motorForward(motor_speed,turn_motor_duration)
                         #motor.motor_left(status, forward,left_spd*spd_ad_2)
                         #motor.motor_right(status,backward,right_spd*spd_ad_2)
@@ -157,7 +151,6 @@ def opencv_thread():         #OpenCV and FPV video
                             pass
                         else:
                             vtr_mid_orig=look_up_max
-                        #RI.headTurnPercent(vtr_mid_orig)
                         RI.headTiltPercent(vtr_mid_orig)
                     elif Y > 250:
                         mu2 = int((Y-240)/5)
@@ -187,7 +180,8 @@ def opencv_thread():         #OpenCV and FPV video
                 #RI.set_Front_LED_On(RI.right_G)
 
                 cv2.putText(image,'Target Detecting',(40,60), font, 0.5,(255,255,255),1,cv2.LINE_AA)
-                print("scan for target")
+                # this is the scan for target section of code
+                #print("scaning for target")
                 RI.stopMotor()
                 #motor.motorStop()
                 # we have nothing so start scanning
@@ -200,7 +194,7 @@ def opencv_thread():         #OpenCV and FPV video
 
                 
 
-            print("len(pts)=", len(pts))
+            #print("len(pts)=", len(pts))
             for i in range(1, len(pts)):
                 if pts[i - 1] is None or pts[i] is None:
                     continue
@@ -217,10 +211,9 @@ def opencv_thread():         #OpenCV and FPV video
         jpg_as_text = base64.b64encode(buffer)
         footage_socket.send(jpg_as_text)
         rawCapture.truncate(0)
-    print("for terminated or not started")
 
 
-#display thread
+#display thread on Pi Screen
 
 def video_thread():
     
@@ -254,43 +247,56 @@ def mainProgram():
         context = zmq.Context()
         footage_socket = context.socket(zmq.PUB)
         footage_socket.connect('tcp://127.0.0.1:5555')
-        dis_scan = 1
+        dis_scan = 1 # scan using ultrasonic
 
+        #Threads start
+        print("Starting Distance Measuring Thread")
         scan_threading=threading.Thread(target=dis_scan_thread)     #Define a thread for ultrasonic scan
-        #scan_threading.setDaemon(True)                              #'True' means it is a front thread,it would close when the mainloop() closes
         scan_threading.start()
 
-        #Threads start
+        print("Starting Show Video Thread")
         video_show_thread=threading.Thread(target=video_thread)      #Define a thread for FPV and OpenCV
-        #video_threading.setDaemon(True)                             #'True' means it is a front thread,it would close when the mainloop() closes
         video_show_thread.start()     
-        time.sleep(5)
 
         
-        #Threads start
+        print("Starting OpenCV Frame Analysis Thread")
         video_threading=threading.Thread(target=opencv_thread)      #Define a thread for FPV and OpenCV
-        #video_threading.setDaemon(True)                             #'True' means it is a front thread,it would close when the mainloop() closes
         video_threading.start()     
         
-dis_dir = []
-distance_stay  = 20 #stay away in cm
-distance_range = 2
+##################################
+# configuration variables
+##################################
 
+
+distance_stay  = 20 #stay away from target in cm
+distance_range = 2 # accept this error in distance_stay (in cm)
+dis_data = 0 # current ultrasonic range in cm
+
+# head turn (hoz) and tilt middles (vtr) - In percent
 vtr_mid    = 50
 hoz_mid    = 50
 
+# where they start (head turn and tilt)
+
 hoz_mid_orig= 50
 vtr_mid_orig = 50
+
+
+# sets the max and minimum numbers (in percent) for head tilt and head turn
 look_up_max    = 100
 look_down_max  = 0 
 look_right_max = 0
 look_left_max  = 100
-turn_speed     = 20 
+
+#motor speed variables - these may have to be tweaked depending on what kind of floor 
+# on wich you are operating your robot.
 
 motor_speed = 100
-motor_duration = 0.40
-turn_motor_duration = 0.50
-scan_motor_duration = 0.50
+motor_duration = 0.40 # normal approach target duration
+turn_motor_duration = 0.50 # during turn duration (needs to be a little longer)
+scan_motor_duration = 0.50 # how long to back up during scan for target operations
+
+
 if __name__ == '__main__':
 
 
@@ -302,10 +308,9 @@ if __name__ == '__main__':
     camera.framerate = 7
     rawCapture = PiRGBArray(camera, size=(640, 480))
     
-    #colorLower = (24, 100, 100)               #The color that openCV find
-    #colorUpper = (44, 255, 255)               #USE HSV value NOT RGB
-    colorLower = (65, 66, 97)               #The color that openCV find
-    colorUpper = (131, 255, 255)               #USE HSV value NOT RGB
+    colorLower = (65, 66, 97)                  #The HSVcolor that openCV will look for
+    #colorUpper = (131, 255, 255)               #bounds for the openCV search
+    colorUpper = (131, 150, 150)               #bounds for the openCV search
 
     ap = argparse.ArgumentParser()            #OpenCV initialization
     ap.add_argument("-b", "--buffer", type=int, default=64,
@@ -315,7 +320,8 @@ if __name__ == '__main__':
     time.sleep(0.1)
 
     try:
-        print("starting Video Thread")
+        print("Starting Find And Chase Ball Thread")
+        print("Zeroing Robot")
         RI.stopMotor()
         RI.allLEDSOff()
         RI.wheelsMiddle()

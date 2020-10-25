@@ -14,7 +14,6 @@ import ultra
 import socket
 import time
 import threading
-import turn
 import led
 import os
 
