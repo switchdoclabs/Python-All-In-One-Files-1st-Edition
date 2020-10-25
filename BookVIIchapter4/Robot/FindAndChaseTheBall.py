@@ -29,6 +29,8 @@ import subprocess
 import neopixel
 import RobotInterface 
 import time
+import random
+
 
 def opencv_thread():         #OpenCV and FPV video
     global footage_socket, dis_data, distance_stay
@@ -129,7 +131,7 @@ def opencv_thread():         #OpenCV and FPV video
                         cv2.putText(image,'Too Close',(40,80), font, 0.5,(128,128,255),1,cv2.LINE_AA)
                     elif dis > (distance_stay+2):
                         print("motor forward")
-                        RI.motorForward(motor_speed,motor_duration)
+                        RI.motorForward(motor_speed,turn_motor_duration)
                         #motor.motor_left(status, forward,left_spd*spd_ad_2)
                         #motor.motor_right(status,backward,right_spd*spd_ad_2)
                         cv2.putText(image,'OpenCV Tracking',(40,80), font, 0.5,(128,255,128),1,cv2.LINE_AA)
@@ -179,16 +181,24 @@ def opencv_thread():         #OpenCV and FPV video
             else:
                 RI.allLEDSOff()
                 #set yellow
-                RI.set_Front_LED_On(RI.left_R)
-                RI.set_Front_LED_On(RI.left_G)
-                RI.set_Front_LED_On(RI.right_R)
-                RI.set_Front_LED_On(RI.right_G)
+                #RI.set_Front_LED_On(RI.left_R)
+                #RI.set_Front_LED_On(RI.left_G)
+                #RI.set_Front_LED_On(RI.right_R)
+                #RI.set_Front_LED_On(RI.right_G)
 
                 cv2.putText(image,'Target Detecting',(40,60), font, 0.5,(255,255,255),1,cv2.LINE_AA)
-                led_y=1
-                #print("targetdetecting")
+                print("scan for target")
                 RI.stopMotor()
                 #motor.motorStop()
+                # we have nothing so start scanning
+                RI.headTurnPercent(random.randint(0,100))
+                RI.headTiltPercent(50)
+                RI.wheelsPercent(100)
+                # move back periodically to look around
+                if (random.randint(0,3) == 1):
+                        RI.motorBackward(motor_speed,scan_motor_duration)
+
+                
 
             print("len(pts)=", len(pts))
             for i in range(1, len(pts)):
@@ -196,6 +206,7 @@ def opencv_thread():         #OpenCV and FPV video
                     continue
                 thickness = int(np.sqrt(args["buffer"] / float(i + 1)) * 2.5)
                 cv2.line(image, pts[i - 1], pts[i], (0, 0, 255), thickness)
+            
         else:
             dis = dis_data
             if dis < 8:
@@ -249,17 +260,18 @@ def mainProgram():
         #scan_threading.setDaemon(True)                              #'True' means it is a front thread,it would close when the mainloop() closes
         scan_threading.start()
 
+        #Threads start
+        video_show_thread=threading.Thread(target=video_thread)      #Define a thread for FPV and OpenCV
+        #video_threading.setDaemon(True)                             #'True' means it is a front thread,it would close when the mainloop() closes
+        video_show_thread.start()     
+        time.sleep(5)
+
         
         #Threads start
         video_threading=threading.Thread(target=opencv_thread)      #Define a thread for FPV and OpenCV
         #video_threading.setDaemon(True)                             #'True' means it is a front thread,it would close when the mainloop() closes
         video_threading.start()     
         
-        #Threads start
-        video_show_thread=threading.Thread(target=video_thread)      #Define a thread for FPV and OpenCV
-        #video_threading.setDaemon(True)                             #'True' means it is a front thread,it would close when the mainloop() closes
-        video_show_thread.start()     
-
 dis_dir = []
 distance_stay  = 20 #stay away in cm
 distance_range = 2
@@ -276,7 +288,9 @@ look_left_max  = 100
 turn_speed     = 20 
 
 motor_speed = 100
-motor_duration = 0.5
+motor_duration = 0.40
+turn_motor_duration = 0.50
+scan_motor_duration = 0.50
 if __name__ == '__main__':
 
 
