@@ -1,0 +1,10 @@
+.sconsign.dblite
+version.h
+*.pyc
+test
+newtest
+*.o
+*.a
+*.swp
+__pycache__
+tx

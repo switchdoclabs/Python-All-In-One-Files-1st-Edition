@@ -35,7 +35,7 @@ LED_CHANNEL    = 0       # set to '1' for GPIOs 13, 19, 41, 45 or 53
 # start up Pixel Strip
 
 from rpi_ws281x import *  
-import neopixel 
+from neopixel  import *
 
 import pixelFunctions 
 
@@ -140,8 +140,8 @@ class RobotInterface(object):
             
             
         def stopMotor(self):
-            motor.motor_left(self.MOTOR_STOP, self.backward,speed)
-            motor.motor_right(self.MOTOR_STOP, self.forward,speed)
+            motor.motor_left(self.MOTOR_STOP, self.backward,0)
+            motor.motor_right(self.MOTOR_STOP, self.forward,0)
 
 
         # servo motors
@@ -164,7 +164,7 @@ class RobotInterface(object):
         def headTurnPercent(self, percent):
             adder = (calValues.look_left_max - calValues.look_right_max)*(percent/100.0)
             #print ("calValues.look_right_max + adder =", calValues.look_right_max + adder)
-            pwm.set_pwm(self.HEAD_TURN_SERVO, 0, int(calValues.look_right_max + adder))
+            pwm.set_pwm(self.HEAD_TURN_SERVO, 0, int(calValues.look_left_max - adder))
             time.sleep(0.05)
             
             
@@ -186,7 +186,7 @@ class RobotInterface(object):
         def headTiltPercent(self,percent):
             adder = (calValues.look_down_max - calValues.look_up_max)*(percent/100.0)
             #print ("calValues.look_up_max + adder =", calValues.look_up_max + adder)
-            pwm.set_pwm(self.HEAD_TILT_SERVO, 0, int(calValues.look_up_max + adder))
+            pwm.set_pwm(self.HEAD_TILT_SERVO, 0, int(calValues.look_down_max - adder))
             time.sleep(0.05)
 
         # Front Wheels

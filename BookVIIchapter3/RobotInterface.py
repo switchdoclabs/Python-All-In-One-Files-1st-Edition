@@ -35,7 +35,7 @@ LED_CHANNEL    = 0       # set to '1' for GPIOs 13, 19, 41, 45 or 53
 # start up Pixel Strip
 
 from rpi_ws281x import *  
-import neopixel 
+from  neopixel import *
 
 import pixelFunctions 
 
